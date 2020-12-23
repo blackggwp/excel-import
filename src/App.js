@@ -1,4 +1,3 @@
-// import React from 'react'
 import './App.css';
 import {
   BrowserRouter as Router,
@@ -6,6 +5,8 @@ import {
   Route,
 } from 'react-router-dom'
 import UploadFile from './components/UploadFile'
+// import RenderPdf from './components/RenderPdf';
+import SearchPanel from './components/SearchPanel';
 
 function App() {
 
@@ -13,6 +14,7 @@ function App() {
     <Router>
       <Switch>
         <Route exact path="/" component={UploadFile} />
+        <Route exact path="/pdf" component={SearchPanel} />
       </Switch>
     </Router>
   )

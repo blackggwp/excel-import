@@ -18,6 +18,8 @@ export default function UploadFile() {
   const [files, setFiles] = useState([])
   const [isSend, setIsSend] = useState(false)
   const [hasError, setHasError] = useState(false)
+  const [errMessage, setErrMessage] = useState(false)
+  const [isSuccess, setIsSuccess] = useState(false)
 
   const handleChange = (e) => {
     const filesT = e.target.files[0]
@@ -31,14 +33,15 @@ export default function UploadFile() {
     let itemsProcessed = 0;
     listSheets.forEach(sheet => {
       readXlsxFile(sheets, { sheet: sheet.name }).then((rows) => {
+
         setFiles(files => [...files, { [sheet.name]: rows }]);
-        // setFiles({ [sheet.name]: rows });
 
         itemsProcessed++
         if (itemsProcessed === listSheets.length) {
           setIsSend(true)
         }
       })
+
     });
   }
   useEffect(() => {
@@ -47,10 +50,14 @@ export default function UploadFile() {
         const result = await Axios.post('/excel/import', files)
         // const res = await result.data
         console.log(result)
+        setHasError(false)
+        setErrMessage(false)
+        setIsSuccess(true)
         // setInvs(invs)
       } catch (error) {
-        setHasError(error.response.data.error)
+        setHasError(error)
         console.error(error)
+        setErrMessage('Data Invalid Please check excel or contact IT DEV.')
       }
     }
     if (isSend) send()
@@ -65,6 +72,8 @@ export default function UploadFile() {
       <input type="file" className="form-control" id="file"
         accept={['.xlsx']} onChange={handleChange} />
       <input type="submit" onClick={proceed} value="upload" />
+      {errMessage && <h3 style={{ color: 'red' }}>{errMessage}</h3>}
+      {isSuccess && <h3 style={{ backgroundColor: 'green' }}>Import data success.</h3>}
     </div>
   )
 }
