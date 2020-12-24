@@ -56,26 +56,22 @@ router.get('/pdf', async function (req, res, next) {
 })
 
 router.post('/import', async function (req, res, next) {
-  var isSuccess = true
   await sqlsrv.connect(mssqlConfig)
   const ps = new sqlsrv.PreparedStatement()
-  // const result = await sqlsrv.query`
   let body = req.body
 
   let excels = []
   let rows = {}
-  // map col with value
   if (body) {
     body.forEach((sheets, i) => {
       for (var key in sheets) {
         if (sheets.hasOwnProperty(key)) {
-          // console.log(key + " : " + sheets[key]);
           for (i = 0; i < sheets[key].length - 1; i++) {
             sheets[key][0].forEach((colName, j) => {
               rows[colName] = sheets[key][i + 1][j]
             })
             excels.push(rows)
-            exec2(rows, Object.keys(sheets), res)
+            exec(rows, Object.keys(sheets), res)
             rows = {}
           }
         }
@@ -95,7 +91,7 @@ router.post('/import', async function (req, res, next) {
     return colName
   }
 
-  async function exec2(rows, db_name, res) {
+  async function exec(rows, db_name, res) {
     const colName = await getColName()
     const vals = mapColWithVal(colName, rows)
     try {
@@ -110,7 +106,6 @@ router.post('/import', async function (req, res, next) {
         (${joinCols(colName)}) values (${joinVal(vals)})`, (err, result) => {
           // ... error checks
           if (err) {
-            isSuccess = false
             console.error(err)
             res.status(400).send(err);
           }
@@ -140,46 +135,7 @@ router.post('/import', async function (req, res, next) {
     // return array.join().split(",").map(i => '\'' + i + '\'').join()
     return array.map(i => '\'' + i + '\'').join()
   }
-  async function exec(cols, vals, db_name, res) {
-    try {
-      const transaction = new sqlsrv.Transaction(/* [pool] */)
-      transaction.begin(err => {
-        // ... error checks
-        const request = new sqlsrv.Request(transaction)
-        request.query(`insert into ${db_name}.dbo.T_Outlet_Foodx (${joinCols(cols)}) values (${joinVal(vals)})`, (err, result) => {
-          // ... error checks
-          // console.log(err)
-          transaction.commit(err => {
-            // ... error checks
-            if (!result || (result === undefined)) {
-              isSuccess = false
-              res.sendStatus(400)
-              // res.status(400).json({
-              //   status: 'error',
-              //   error: 'cannot insert data to db',
-              // })
-              return
-            } else {
-              return res.status(200)
-            }
-          })
-        })
-      })
-    } catch (error) {
-      console.error(error);
-      res.sendStatus(504)
-    }
-  }
-  // for (const sheet in body) {
-  //   for (db_name in body[sheet]) {
-  //     const cols = body[sheet][db_name][0]
-  //     let row = body[sheet][db_name]
-  //     row.shift()
-  //     row.forEach(async element => {
-  //       exec(cols, element, db_name, res)
-  //     });
-  //   }
-  // }
+
 })
 
 module.exports = router;
