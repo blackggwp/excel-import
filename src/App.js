@@ -11,12 +11,13 @@ import SearchPanel from './components/SearchPanel';
 function App() {
 
   return (
-    <Router>
+    // <Router>
+    <Router basename="/import-excel" >
       <Switch>
         <Route exact path="/" component={UploadPanel} />
         <Route exact path="/pdf" component={SearchPanel} />
       </Switch>
-    </Router>
+    </Router >
   )
 }
 

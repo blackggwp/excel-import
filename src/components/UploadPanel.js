@@ -17,7 +17,8 @@ const baseStyle = {
   outline: 'none',
   transition: 'border .24s ease-in-out',
   fontFamily: 'Kanit',
-  fontWeight: 700
+  fontWeight: 700,
+  cursor: 'pointer'
 };
 
 const activeStyle = {
@@ -125,18 +126,27 @@ export default function StyledDropzone() {
   }, [files])
 
   return (
-    <div className="container">
+    <div className="container" style={{ padding: 20 }}>
       <div {...getRootProps({ style })}>
-        <input {...getInputProps()} />
-        <p>Drag 'n' drop some files here, or click to select files</p>
-        <em>(Only *.xlsx will be accepted)</em>
+
+        <div className="jumbotron jumbotron-fluid">
+          <div className="container">
+            <h1 className="display-3">Import excel file here.</h1>
+            <hr className="my-2" />
+            <p>Drag 'n' drop some files here, or click to select files</p>
+            <em>(Only *.xlsx will be accepted)</em>
+          </div>
+          <input {...getInputProps()} />
+        </div>
       </div>
+
       <aside style={thumbsContainer}>
         {thumbs}
         <ul>{acceptedFileItems}</ul>
+        {isFiles && <UploadFile uploadedFile={files} />}
       </aside>
-      {isFiles && <UploadFile uploadedFile={files} />}
     </div>
+
   );
 }
 

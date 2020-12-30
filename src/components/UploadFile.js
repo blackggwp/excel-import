@@ -1,7 +1,7 @@
 import Axios from 'axios';
 import React, { useEffect, useState } from 'react';
 import readXlsxFile from 'read-excel-file'
-
+import '../config'
 const style = {
   margin: '40px',
   display: 'block',
@@ -24,7 +24,6 @@ export default function UploadFile(props) {
   const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (file) => {
-    // const filesT = e.target.files[0]
     const filesT = file[0]
     readXlsxFile(filesT, { getSheets: true }).then((sheets) => {
       setListSheets(sheets)
@@ -52,7 +51,8 @@ export default function UploadFile(props) {
     const send = async () => {
       setIsLoading(true)
       try {
-        const result = await Axios.post('/excel/import', files)
+
+        const result = await Axios.post(global.config.api.excel + '/excel/import', { importExcel: true, files: [...files] })
         console.log(result)
         setHasError(false)
         setErrMessage(false)
@@ -61,9 +61,10 @@ export default function UploadFile(props) {
         setErrMessage(false)
       } catch (error) {
         setIsLoading(false)
-        setHasError(error)
-        setIsSuccess(false)
         console.error(error)
+        const errMsg = error?.response?.statusText
+        setHasError(errMsg)
+        setIsSuccess(false)
         setErrMessage('Data Invalid Please check excel or contact IT DEV.')
       }
     }
@@ -99,7 +100,6 @@ export default function UploadFile(props) {
             margin: '0 auto',
             letterSpacing: '0.1em',
             cursor: 'pointer',
-            fontStyle: 'Kanit',
             fontSize: 14,
             fontWeight: 400,
             lineHeight: 45,
@@ -110,7 +110,7 @@ export default function UploadFile(props) {
             width: '100%'
           }}
         />}
-      {errMessage && !isLoading && <h3 style={{ backgroundColor: 'red' }}>{errMessage}</h3>}
+      {errMessage && !isLoading && <h3 style={{ backgroundColor: 'red' }}>{errMessage + hasError}</h3>}
       {isSuccess && !isLoading && <h3 style={{ backgroundColor: 'green' }}>Import data success.</h3>}
     </div>
   )

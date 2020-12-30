@@ -1,8 +1,10 @@
 var express = require('express');
 var router = express.Router();
-
 const sqlsrv = require('mssql')
-let mssqlConfig = {
+
+// const mssqlConfig = 'mssql://sa:88888888pP@192.168.0.251/test'
+
+const mssqlConfig = {
   user: "sa",
   password: "admin1234",
   server: "localhost",
@@ -57,13 +59,14 @@ router.get('/pdf', async function (req, res, next) {
 
 router.post('/import', async function (req, res, next) {
   await sqlsrv.connect(mssqlConfig)
-  const ps = new sqlsrv.PreparedStatement()
-  let body = req.body
-
+  // const ps = new sqlsrv.PreparedStatement()
+  let body = []
+  body = req.body
   let excels = []
   let rows = {}
-  if (body) {
-    body.forEach((sheets, i) => {
+  if (body.importExcel) {
+    body = body.files
+    for (const sheets of body) {
       for (var key in sheets) {
         if (sheets.hasOwnProperty(key)) {
           for (i = 0; i < sheets[key].length - 1; i++) {
@@ -76,8 +79,10 @@ router.post('/import', async function (req, res, next) {
           }
         }
       }
-    })
-    return res.sendStatus(200)
+    }
+    res.sendStatus(200)
+  } else {
+    res.sendStatus(400)
   }
 
   async function getColName() {
@@ -107,10 +112,18 @@ router.post('/import', async function (req, res, next) {
           // ... error checks
           if (err) {
             console.error(err)
-            res.status(400).send(err);
+            res.statusMessage = err
+            res.sendStatus(400).end()
+            return false
           }
           transaction.commit(err => {
             // ... error checks
+            if (err) {
+              console.error(err)
+              res.statusMessage = err
+              res.sendStatus(400).end()
+              return false
+            }
           })
         })
       })
