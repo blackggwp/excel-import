@@ -12,7 +12,7 @@ const baseStyle = {
   borderRadius: 2,
   borderColor: '#eeeeee',
   borderStyle: 'dashed',
-  backgroundColor: '#fafafa',
+  backgroundColor: 'rgb(222 220 220)',
   color: '#000',
   outline: 'none',
   transition: 'border .24s ease-in-out',

@@ -1,6 +1,6 @@
 module.exports = global.config = {
   api: {
-    excel: 'http://localhost:1000'
+    excel: 'http://223.27.210.251:1000'
   }
   // other global config variables you wish
 };

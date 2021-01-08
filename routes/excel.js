@@ -1,6 +1,6 @@
 var express = require('express');
 var router = express.Router();
-const sqlsrv = require('mssql')
+const sql = require('mssql')
 
 // const mssqlConfig = 'mssql://sa:88888888pP@192.168.0.251/test'
 
@@ -18,7 +18,7 @@ const mssqlConfig = {
 router.get('/inv', async function (req, res, next) {
   const inv_num = String(req.query.q)
   try {
-    let pool = await sqlsrv.connect(mssqlConfig)
+    let pool = await sql.connect(mssqlConfig)
     let result = await pool.request()
       .input('input_parameter', '%' + inv_num + '%')
       .query('SELECT TOP(5) * FROM  tinvoice WHERE (scinvoice LIKE @input_parameter )')
@@ -58,35 +58,62 @@ router.get('/pdf', async function (req, res, next) {
 })
 
 router.post('/import', async function (req, res, next) {
-  await sqlsrv.connect(mssqlConfig)
-  // const ps = new sqlsrv.PreparedStatement()
+  await sql.connect(mssqlConfig)
   let body = []
   body = req.body
   let excels = []
   let rows = {}
+  let results = {}
   if (body.importExcel) {
     body = body.files
+    const isSuccess = await loopData(responseStatus)
+    if (isSuccess) {
+      responseStatus(res)
+    }
+  } else {
+    res.sendStatus(400)
+  }
+
+  async function loopData(_callback) {
     for (const sheets of body) {
-      for (var key in sheets) {
+      for (const key in sheets) {
         if (sheets.hasOwnProperty(key)) {
           for (i = 0; i < sheets[key].length - 1; i++) {
             sheets[key][0].forEach((colName, j) => {
               rows[colName] = sheets[key][i + 1][j]
             })
             excels.push(rows)
-            exec(rows, Object.keys(sheets), res)
+            try {
+              const status = await insertDB(rows, Object.keys(sheets), res)
+              // console.log(status)
+              if (status) {
+                return _callback(res, status)
+              }
+            } catch (err) {
+              return _callback(res, err)
+            }
             rows = {}
           }
         }
       }
     }
-    res.sendStatus(200)
-  } else {
-    res.sendStatus(400)
+    return true
+  }
+
+  function responseStatus(res, err) {
+    if (!err) {
+      res.statusMessage = JSON.stringify(results)
+      res.sendStatus(200)
+      return
+    } else {
+      res.statusMessage = err
+      res.sendStatus(400).end()
+      return
+    }
   }
 
   async function getColName() {
-    const result = await sqlsrv.query`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+    const result = await sql.query`SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
     WHERE (TABLE_NAME = 'T_Outlet_Foodx')`
     const colNameT = result.recordset
     let colName = []
@@ -96,40 +123,19 @@ router.post('/import', async function (req, res, next) {
     return colName
   }
 
-  async function exec(rows, db_name, res) {
+  async function insertDB(rows, db_name) {
     const colName = await getColName()
     const vals = mapColWithVal(colName, rows)
     try {
-      const transaction = new sqlsrv.Transaction(/* [pool] */)
-      transaction.begin(async (err) => {
-        // ... error checks
-        const request = new sqlsrv.Request(transaction)
-        // console.log(`insert into ${db_name}.dbo.T_Outlet_Foodx 
-        // (${joinCols(colName)}) values (${joinVal(vals)})`
-        // )
-        request.query(`insert into ${db_name}.dbo.T_Outlet_Foodx 
-        (${joinCols(colName)}) values (${joinVal(vals)})`, (err, result) => {
-          // ... error checks
-          if (err) {
-            console.error(err)
-            res.statusMessage = err
-            res.sendStatus(400).end()
-            return false
-          }
-          transaction.commit(err => {
-            // ... error checks
-            if (err) {
-              console.error(err)
-              res.statusMessage = err
-              res.sendStatus(400).end()
-              return false
-            }
-          })
-        })
-      })
-    } catch (error) {
-      console.error(error);
-      res.sendStatus(504)
+      let statement = `insert into ${db_name}.dbo.T_Outlet_Foodx 
+      (${joinCols(colName)}) values (${joinVal(vals)})`
+      let pool = await sql.connect(mssqlConfig)
+      let result1 = await pool.request().query(statement)
+      results[db_name] = (results[db_name] + parseInt(result1.rowsAffected)) || parseInt(result1.rowsAffected);
+      // console.dir(result1)
+    } catch (err) {
+      // console.error(err)
+      return ` ${err} DBName: ${db_name} `
     }
   }
 

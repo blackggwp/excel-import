@@ -22,6 +22,7 @@ export default function UploadFile(props) {
   const [errMessage, setErrMessage] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [results, setResults] = useState(false)
 
   const handleChange = (file) => {
     const filesT = file[0]
@@ -54,6 +55,8 @@ export default function UploadFile(props) {
 
         const result = await Axios.post(global.config.api.excel + '/excel/import', { importExcel: true, files: [...files] })
         console.log(result)
+        const statusText = JSON.parse(result?.statusText)
+        setResults(statusText)
         setHasError(false)
         setErrMessage(false)
         setIsSuccess(true)
@@ -63,9 +66,10 @@ export default function UploadFile(props) {
         setIsLoading(false)
         console.error(error)
         const errMsg = error?.response?.statusText
-        setHasError(errMsg)
+        setErrMessage(errMsg)
+        setHasError(error)
         setIsSuccess(false)
-        setErrMessage('Data Invalid Please check excel or contact IT DEV.')
+        setResults(false)
       }
     }
     if (isSend) send()
@@ -110,8 +114,9 @@ export default function UploadFile(props) {
             width: '100%'
           }}
         />}
-      {errMessage && !isLoading && <h3 style={{ backgroundColor: 'red' }}>{errMessage + hasError}</h3>}
+      {(hasError || errMessage) && !isLoading && <h3 style={{ backgroundColor: 'red' }}>{errMessage + hasError}</h3>}
       {isSuccess && !isLoading && <h3 style={{ backgroundColor: 'green' }}>Import data success.</h3>}
+      {results && Object.keys(results).map((row, i) => <p key={i}>DBName: <b>{row}</b> - row affected: <b>{results[row]}</b></p>)}
     </div>
   )
 }
